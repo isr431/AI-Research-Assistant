@@ -3,7 +3,7 @@
 A real-time, source-backed research tool powered by LLMs. Ask a question, get a cited answer — streamed live to your browser.
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="AI Research Assistant UI" width="720" />
+  <img src="screenshot.png" alt="AI Research Assistant UI" width="720" />
 </p>
 
 ## What it does
