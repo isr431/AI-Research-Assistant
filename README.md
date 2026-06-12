@@ -174,9 +174,3 @@ python3 -m unittest discover -s tests
 ```
 
 The test suite covers history persistence, concurrent writes, deterministic search ordering, image search ranking/deduplication, source scoring, page extraction, coverage helpers, provider aliases, and cancellation.
-
----
-
-## License
-
-This project is provided as-is for personal and educational use.
