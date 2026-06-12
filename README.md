@@ -48,8 +48,8 @@ AI Research Assistant takes a natural-language question, searches the web via th
 
 ```bash
 # Clone the repository
-git clone https://github.com/isr431/ai-research-assistant.git
-cd ai-research-assistant
+git clone https://github.com/isr431/AI-Research-Assistant.git
+cd AI-Research-Assistant
 
 # Install dependencies
 pip install -r requirements.txt
