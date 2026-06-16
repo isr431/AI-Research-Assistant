@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Research Assistant</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Highlight.js — light theme (legible on off-white) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<div id="app">
+  <!-- ===================== Sidebar ===================== -->
+  <aside id="sidebar">
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <!-- knowledge-graph edges -->
+          <path d="M6.4 7.4 L17.6 7.4 M6.4 7.4 L12 16.6 M17.6 7.4 L12 16.6"
+                fill="none" stroke="currentColor" stroke-width="1.4"
+                stroke-linecap="square" />
+          <!-- nodes (square, theme-consistent) -->
+          <rect x="4.5" y="5.5" width="3.8" height="3.8" fill="currentColor" />
+          <rect x="15.7" y="5.5" width="3.8" height="3.8" fill="currentColor" />
+          <rect x="10.1" y="14.7" width="3.8" height="3.8" fill="currentColor" />
+        </svg>
+      </div>
+      <h1>Research Assistant<span>Knowledge Engine</span></h1>
+    </div>
+
+    <!-- New Search -->
+    <button id="btn-new-search" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      New Search
+    </button>
+
+    <!-- Controls -->
+    <div class="sidebar-controls">
+      <!-- Model Selector -->
+      <div class="control-group">
+        <label class="control-label" for="model-selector">Model</label>
+        <div class="custom-select-wrapper">
+          <select id="model-selector">
+            <option value="deepseek">Loading…</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="toggle-row">
+          <span class="toggle-label-text">Images</span>
+          <label class="toggle-switch" for="images-toggle">
+            <input type="checkbox" id="images-toggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="sidebar-history">
+      <div class="history-header">Search History</div>
+      <div id="history-list">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================== Main Panel ===================== -->
+  <main id="main-panel">
+    <!-- Search Bar -->
+    <div class="search-bar-container">
+      <div class="search-bar">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Ask anything"
+          autocomplete="off"
+          spellcheck="false"
+        />
+
+        <!-- Mode Toggle -->
+        <div class="mode-toggle" id="mode-toggle">
+          <div class="mode-slider moderate" id="mode-slider"></div>
+          <button class="mode-option" data-mode="quick" id="mode-quick" type="button">Quick</button>
+          <button class="mode-option active" data-mode="moderate" id="mode-moderate" type="button">Moderate</button>
+          <button class="mode-option" data-mode="deep" id="mode-deep" type="button">Deep</button>
+        </div>
+
+        <!-- Go Button -->
+        <button id="btn-search" type="button" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-area" id="results-area">
+      <!-- Empty state (shown by default) -->
+      <div class="empty-state" id="empty-state">
+        <div class="empty-state-kicker">// STANDBY</div>
+        <h2>Ready to explore</h2>
+        <p>Ask a question and the engine will search the web, analyze sources, and synthesize a comprehensive answer for you.</p>
+      </div>
+
+      <!-- Pipeline steps (hidden until search starts) -->
+      <div class="pipeline-panel hidden" id="pipeline-panel">
+        <div class="panel-title">// PIPELINE</div>
+        <div class="pipeline-steps" id="pipeline-steps">
+          <!-- JS will populate steps -->
+        </div>
+      </div>
+
+      <!-- Thinking panel (hidden until thinking arrives) -->
+      <div class="thinking-panel hidden" id="thinking-panel">
+        <div class="thinking-header" id="thinking-header">
+          <div class="thinking-header-left">
+            <span class="thinking-title">MODEL THINKING</span>
+            <span class="thinking-token-count" id="thinking-token-count"></span>
+          </div>
+          <span class="thinking-chevron" id="thinking-chevron">▼</span>
+        </div>
+        <div class="thinking-body" id="thinking-body">
+          <div class="thinking-body-inner">
+            <div class="thinking-content" id="thinking-content"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Response content (hidden until content arrives) -->
+      <div class="response-panel hidden" id="response-panel">
+        <div class="response-content" id="response-content"></div>
+      </div>
+
+      <!-- Image results (hidden unless enabled and available) -->
+      <div class="images-panel hidden" id="images-panel">
+        <div class="panel-title">// IMAGES</div>
+        <div class="images-grid" id="images-grid"></div>
+      </div>
+
+      <!-- Sources panel (hidden until sources arrive) -->
+      <div class="sources-panel hidden" id="sources-panel">
+        <div class="panel-title">// SOURCES</div>
+        <div class="sources-list" id="sources-list"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Error toast container -->
+<div id="toast-container"></div>
+
+<!-- Vendor scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- App script -->
+<script src="/static/app.js"></script>
+
+</body>
+</html>
