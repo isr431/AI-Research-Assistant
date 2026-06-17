@@ -49,21 +49,19 @@ _STAGE_THINKING_FRACTION = {
 
 @contextmanager
 def _stage_thinking(
-    llm: LLMClient, stage: str, base_budget: int, preset: dict[str, Any] | None = None
+    llm: LLMClient, stage: str, base_level: str
 ) -> Generator[None, None, None]:
-    """Temporarily set the LLM thinking budget for a specific pipeline stage."""
-    budget_key = f"{stage}_budget"
-    if preset and budget_key in preset:
-        stage_budget = preset[budget_key]
+    """Temporarily set the LLM thinking level for a specific pipeline stage."""
+    if stage == "plan":
+        stage_level = "none"
     else:
-        fraction = _STAGE_THINKING_FRACTION.get(stage, 1.0)
-        stage_budget = int(base_budget * fraction)
-    prev = llm.thinking_budget
-    llm.thinking_budget = stage_budget
+        stage_level = base_level
+    prev = llm.thinking_level
+    llm.thinking_level = stage_level
     try:
         yield
     finally:
-        llm.thinking_budget = prev
+        llm.thinking_level = prev
 
 # ---------------------------------------------------------------------------
 # Streaming pipeline events
@@ -169,9 +167,12 @@ def research_stream(
             count=4,
         )
 
-    # Thinking budget: on = preset default, off = 0
-    base_budget = preset["thinking_budget"] if thinking_enabled else 0
-    llm = LLMClient(provider_cfg, thinking_budget=base_budget, verbose=False)
+    # Thinking level: on = preset value from model config, off = "none"
+    if thinking_enabled:
+        base_level = provider_cfg.get("thinking_presets", {}).get(preset_name, "none")
+    else:
+        base_level = "none"
+    llm = LLMClient(provider_cfg, thinking_level=base_level, verbose=False)
     today = date.today().isoformat()
 
     emit({
@@ -205,7 +206,7 @@ def research_stream(
                 "stage": "plan",
             })
             try:
-                with _stage_thinking(llm, "plan", base_budget, preset):
+                with _stage_thinking(llm, "plan", base_level):
                     queries = _stage_plan(llm, question, preset, today)
             except Exception as exc:
                 emit({
@@ -281,12 +282,12 @@ def research_stream(
         if pipeline_mode == "quick":
             response, thinking = _quick_pipeline_stream(
                 llm, question, preset, registry, today,
-                base_budget, emit, cancel_check,
+                base_level, emit, cancel_check,
             )
         else:
             response, thinking = _research_pipeline_stream(
                 llm, question, queries, brave_key, preset, registry, today,
-                base_budget, emit, cancel_check,
+                base_level, emit, cancel_check,
             )
         _raise_if_cancelled(cancel_check)
 
@@ -720,7 +721,7 @@ def _quick_pipeline_stream(
     preset: dict[str, Any],
     registry: SourceRegistry,
     current_date: str,
-    base_budget: int,
+    base_level: str,
     emit: EventCallback,
     cancel_check: CancelCheck | None = None,
 ) -> tuple[str, str]:
@@ -762,7 +763,7 @@ def _quick_pipeline_stream(
 
     response = ""
     thinking = ""
-    with _stage_thinking(llm, "synthesis", base_budget, preset):
+    with _stage_thinking(llm, "synthesis", base_level):
         for event in llm.ask_text_stream(prompt):
             _raise_if_cancelled(cancel_check)
             if event["type"] == "done":
@@ -786,7 +787,7 @@ def _research_pipeline_stream(
     preset: dict[str, Any],
     registry: SourceRegistry,
     current_date: str,
-    base_budget: int,
+    base_level: str,
     emit: EventCallback,
     cancel_check: CancelCheck | None = None,
 ) -> tuple[str, str]:
@@ -885,7 +886,7 @@ def _research_pipeline_stream(
 
     response = ""
     thinking = ""
-    with _stage_thinking(llm, "synthesis", base_budget, preset):
+    with _stage_thinking(llm, "synthesis", base_level):
         for event in llm.ask_text_stream(prompt):
             _raise_if_cancelled(cancel_check)
             if event["type"] == "done":

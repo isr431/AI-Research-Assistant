@@ -590,7 +590,7 @@ class PipelineHelperTests(unittest.TestCase):
 class PipelineRestructureTests(unittest.TestCase):
     class FakeLLM:
         def __init__(self, *_: object, **__: object) -> None:
-            self.thinking_budget = 0
+            self.thinking_level = "none"
             self.ask_json_calls = 0
 
         def ask_json(self, *_: object, **__: object) -> dict:
@@ -815,10 +815,47 @@ class MistralIntegrationTests(unittest.TestCase):
         from llm import _THINKING_BUILDERS
         self.assertIn("mistral", _THINKING_BUILDERS)
         builder = _THINKING_BUILDERS["mistral"]
-        self.assertEqual(builder(0), {"reasoning_effort": "none"})
-        self.assertEqual(builder(-5), {"reasoning_effort": "none"})
-        self.assertEqual(builder(100), {"reasoning_effort": "high"})
-        self.assertEqual(builder(2048), {"reasoning_effort": "high"})
+        self.assertEqual(builder("none"), {"reasoning_effort": "none"})
+        self.assertEqual(builder("disabled"), {"reasoning_effort": "none"})
+        self.assertEqual(builder("low"), {"reasoning_effort": "high"})
+        self.assertEqual(builder("high"), {"reasoning_effort": "high"})
+
+    def test_deepseek_thinking_params(self) -> None:
+        from llm import _THINKING_BUILDERS
+        self.assertIn("deepseek", _THINKING_BUILDERS)
+        builder = _THINKING_BUILDERS["deepseek"]
+        self.assertEqual(builder("none"), {"thinking": {"type": "disabled"}})
+        self.assertEqual(builder("disabled"), {"thinking": {"type": "disabled"}})
+        self.assertEqual(builder("high"), {"thinking": {"type": "enabled"}, "reasoning_effort": "high"})
+        self.assertEqual(builder("max"), {"thinking": {"type": "enabled"}, "reasoning_effort": "max"})
+        self.assertEqual(builder("low"), {"thinking": {"type": "enabled"}, "reasoning_effort": "high"})
+
+    def test_gemini_thinking_params(self) -> None:
+        from llm import _THINKING_BUILDERS
+        self.assertIn("gemini", _THINKING_BUILDERS)
+        builder = _THINKING_BUILDERS["gemini"]
+        self.assertEqual(builder("none"), {})
+        self.assertEqual(builder("disabled"), {})
+        self.assertEqual(builder("low"), {
+            "extra_body": {
+                "google": {
+                    "thinking_config": {
+                        "thinking_level": "low",
+                        "include_thoughts": True,
+                    }
+                }
+            }
+        })
+        self.assertEqual(builder("medium"), {
+            "extra_body": {
+                "google": {
+                    "thinking_config": {
+                        "thinking_level": "medium",
+                        "include_thoughts": True,
+                    }
+                }
+            }
+        })
 
     def test_extract_response_with_nested_thinking(self) -> None:
         from llm import _extract_response
@@ -936,8 +973,7 @@ class MistralIntegrationTests(unittest.TestCase):
             "supports_thinking": True,
             "thinking_style": "mistral"
         }
-        
-        client = LLMClient(provider_cfg, thinking_budget=2048)
+        client = LLMClient(provider_cfg, thinking_level="high")
         events = list(client.ask_text_stream("test query"))
         
         # Verify events emitted
@@ -986,7 +1022,7 @@ class NewFixesTests(unittest.TestCase):
                 "supports_thinking": True,
                 "thinking_style": "gemini"
             }
-            client = LLMClient(provider_cfg, thinking_budget=2048)
+            client = LLMClient(provider_cfg, thinking_level="high")
             events = list(client.ask_text_stream("test query"))
             
             # The first event must be content "Hi" immediately (no 20-character buffering delay)

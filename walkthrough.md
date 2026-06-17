@@ -22,8 +22,9 @@ The entry point for the web application. Features:
 ### [config.py](config.py) — Configuration & Multi-model Support
 Handles API keys, global configurations, and model definitions.
 - `MODEL_PROVIDERS`: A flat dictionary containing specific models (e.g., `deepseek-v4-pro`, `deepseek-v4-flash`, `gemini-3.5-flash`, `mistral-medium-3.5`), their URLs, and capabilities.
+- Each model configuration defines `thinking_presets` that dictate the exact reasoning/thinking level passed onto the API based on the active search mode (Quick, Moderate, or Deep).
 - Configuration errors raise normal Python exceptions so the web stream can surface failures cleanly instead of terminating a worker thread.
-- `SEARCH_PRESETS`: Defines three performance modes with finely tuned token budgets:
+- `SEARCH_PRESETS`: Defines three performance modes:
   - **Quick**: One direct search pass and one concise answer pass. It skips planning and refinement to preserve latency.
   - **Moderate**: One planned search pass, deterministic coverage checking, at most one follow-up pass, and one detailed synthesis pass.
   - **Deep**: Broader planned search, deterministic multi-pass coverage checking, and one final report-style synthesis.
@@ -42,7 +43,7 @@ Maintains a thread-safe JSON index (`output/history.json`) alongside timestamped
 OpenAI-compatible client with robust streaming and JSON extraction capabilities.
 - `chat_completion_stream()`: A highly specialized SSE parser that connects to LLMs via `stream=True`. It yields structured event dicts: `{"type": "thinking"|"content"|"done", ...}`.
 - Implements a state machine to parse Gemini's inline `<thought>...</thought>` tags natively, stripping them from the main content stream and yielding them as discrete `thinking` events.
-- Handles Mistral-specific reasoning/thinking mode using the `reasoning_effort` API parameter, and parses both streaming and non-streaming thinking content nested within list-based blocks.
+- Handles Mistral-specific and DeepSeek-specific reasoning/thinking mode using dynamic string-based parameter builders that map abstract levels to specific API parameters (`reasoning_effort` and `thinking_level`).
 - Handles automated retries for malformed JSON when `json_mode=True`.
 
 ### [prompts.py](prompts.py) — System Instructions

@@ -57,41 +57,34 @@ def extract_json(text: str) -> dict:
 # Thinking-level mapping helpers
 # ---------------------------------------------------------------------------
 
-def _deepseek_thinking_params(thinking_budget: int) -> dict[str, Any]:
+def _deepseek_thinking_params(level: str) -> dict[str, Any]:
     """Build DeepSeek-specific thinking parameters.
 
-    DeepSeek uses:
-      {"thinking": {"type": "enabled"}, "reasoning_effort": "high"|"max"}
-    ``reasoning_effort`` only distinguishes "high" and "max", so any budget
-    below 32768 collapses to "high" — bump the budget to 32768+ for "max".
+    DeepSeek V4 supports:
+      - enabled: reasoning_effort="high" or "max"
+      - disabled: {"thinking": {"type": "disabled"}}
     """
-    if thinking_budget <= 0:
+    if level in ("disabled", "none", "off"):
         return {"thinking": {"type": "disabled"}}
-    effort = "max" if thinking_budget >= 32768 else "high"
+    effort = level if level in ("high", "max") else "high"
     return {"thinking": {"type": "enabled"}, "reasoning_effort": effort}
 
 
-def _gemini_thinking_params(thinking_budget: int) -> dict[str, Any]:
+def _gemini_thinking_params(level: str) -> dict[str, Any]:
     """Build Gemini-specific thinking parameters.
 
     Gemini's OpenAI-compatible endpoint accepts thinking config wrapped in an
-    ``extra_body`` key when making raw JSON requests. Setting
-    ``include_thoughts: true`` causes thinking text to be inlined in the
-    content wrapped in ``<thought>...</thought>`` tags.
+    ``extra_body`` key when making raw JSON requests.
+    Supported levels: "low", "medium", "high"
     """
-    if thinking_budget <= 0:
-        level = "minimal"
-    elif thinking_budget <= 2048:
-        level = "low"
-    elif thinking_budget <= 8192:
-        level = "medium"
-    else:
-        level = "high"
+    if level in ("disabled", "none", "off", "minimal"):
+        return {}  # Omit thinking config to keep it disabled
+    thinking_level = level if level in ("low", "medium", "high") else "medium"
     return {
         "extra_body": {
             "google": {
                 "thinking_config": {
-                    "thinking_level": level,
+                    "thinking_level": thinking_level,
                     "include_thoughts": True,
                 }
             }
@@ -99,13 +92,13 @@ def _gemini_thinking_params(thinking_budget: int) -> dict[str, Any]:
     }
 
 
-def _mistral_thinking_params(thinking_budget: int) -> dict[str, Any]:
+def _mistral_thinking_params(level: str) -> dict[str, Any]:
     """Build Mistral-specific thinking parameters.
 
-    Mistral uses:
-      {"reasoning_effort": "high"|"none"}
+    Mistral supports:
+      {"reasoning_effort": "none"|"high"}
     """
-    if thinking_budget <= 0:
+    if level in ("disabled", "none", "off"):
         return {"reasoning_effort": "none"}
     return {"reasoning_effort": "high"}
 
@@ -204,7 +197,7 @@ class LLMClient:
         self,
         provider_config: dict[str, Any],
         *,
-        thinking_budget: int | None = None,
+        thinking_level: str | None = None,
         verbose: bool = False,
     ) -> None:
         self.base_url = provider_config["base_url"].rstrip("/")
@@ -216,20 +209,20 @@ class LLMClient:
         self.provider_name = provider_config.get("name", "Unknown")
         self.verbose = verbose
 
-        # Resolve thinking budget: explicit > preset (set later) > disabled
-        self._thinking_budget = thinking_budget if thinking_budget is not None else 0
+        # Resolve thinking level: explicit > preset ("none")
+        self._thinking_level = thinking_level or "none"
 
     @property
-    def thinking_budget(self) -> int:
-        return self._thinking_budget
+    def thinking_level(self) -> str:
+        return self._thinking_level
 
-    @thinking_budget.setter
-    def thinking_budget(self, value: int) -> None:
-        self._thinking_budget = max(0, value)
+    @thinking_level.setter
+    def thinking_level(self, value: str) -> None:
+        self._thinking_level = value or "none"
 
     @property
     def thinking_enabled(self) -> bool:
-        return self.supports_thinking and self._thinking_budget > 0
+        return self.supports_thinking and self._thinking_level not in ("none", "disabled", "off", "minimal")
 
     def _print_thinking(self, thinking_text: str) -> None:
         """Print the model's thinking/reasoning to stderr in verbose mode."""
@@ -276,7 +269,7 @@ class LLMClient:
         # Inject thinking parameters
         if self.supports_thinking and self.thinking_style in _THINKING_BUILDERS:
             thinking_params = _THINKING_BUILDERS[self.thinking_style](
-                self._thinking_budget
+                self._thinking_level
             )
             body.update(thinking_params)
 
@@ -383,7 +376,7 @@ class LLMClient:
         # Inject thinking parameters (same as non-streaming)
         if self.supports_thinking and self.thinking_style in _THINKING_BUILDERS:
             thinking_params = _THINKING_BUILDERS[self.thinking_style](
-                self._thinking_budget
+                self._thinking_level
             )
             body.update(thinking_params)
 

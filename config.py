@@ -19,9 +19,16 @@ MODEL_PROVIDERS = {
         "api_key_env": "DEEPSEEK_API_KEY",
         "supports_json_mode": True,
         "supports_thinking": True,
-        # DeepSeek uses {"thinking": {"type": "enabled"}} + "reasoning_effort"
-        # Only "high" and "max" are effective; low/medium silently map to high.
         "thinking_style": "deepseek",
+        # DeepSeek API reasoning effort options:
+        #   - "none": disables thinking mode (fast, standard LLM output)
+        #   - "high": default reasoning effort
+        #   - "max": maximum reasoning effort (deepest thinking)
+        "thinking_presets": {
+            "quick": "high",
+            "moderate": "high",
+            "deep": "max",
+        },
     },
     "deepseek-v4-flash": {
         "name": "DeepSeek V4 Flash",
@@ -30,9 +37,16 @@ MODEL_PROVIDERS = {
         "api_key_env": "DEEPSEEK_API_KEY",
         "supports_json_mode": True,
         "supports_thinking": True,
-        # DeepSeek uses {"thinking": {"type": "enabled"}} + "reasoning_effort"
-        # Only "high" and "max" are effective; low/medium silently map to high.
         "thinking_style": "deepseek",
+        # DeepSeek API reasoning effort options:
+        #   - "none": disables thinking mode (fast, standard LLM output)
+        #   - "high": default reasoning effort
+        #   - "max": maximum reasoning effort (deepest thinking)
+        "thinking_presets": {
+            "quick": "high",
+            "moderate": "high",
+            "deep": "max",
+        },
     },
     "gemini-3.5-flash": {
         "name": "Gemini 3.5 Flash",
@@ -41,10 +55,17 @@ MODEL_PROVIDERS = {
         "api_key_env": "GEMINI_API_KEY",
         "supports_json_mode": True,
         "supports_thinking": True,
-        # Gemini uses the extra_body field with google.thinking_config.
-        # include_thoughts=true causes thinking to be inlined in content
-        # wrapped in <thought>...</thought> tags.
         "thinking_style": "gemini",
+        # Gemini API thinking_level options:
+        #   - "none": disables thinking mode (fast, standard LLM output)
+        #   - "low": low reasoning depth
+        #   - "medium": balanced reasoning depth
+        #   - "high": comprehensive reasoning depth
+        "thinking_presets": {
+            "quick": "low",
+            "moderate": "medium",
+            "deep": "high",
+        },
     },
     "mistral-medium-3.5": {
         "name": "Mistral Medium 3.5",
@@ -54,6 +75,14 @@ MODEL_PROVIDERS = {
         "supports_json_mode": True,
         "supports_thinking": True,
         "thinking_style": "mistral",
+        # Mistral API reasoning_effort options:
+        #   - "none": disables thinking mode (fast, standard LLM output)
+        #   - "high": comprehensive reasoning depth (on)
+        "thinking_presets": {
+            "quick": "none",
+            "moderate": "high",
+            "deep": "high",
+        },
     },
 }
 
@@ -78,7 +107,6 @@ SEARCH_PRESETS = {
         "tokens_per_query": 4096,
         "output_style": "concise",
         "max_context_tokens": 14_000,
-        "thinking_budget": 2048,
         "full_page_sources": 2,
         "total_full_page_sources": 2,
         "full_page_chars": 3500,
@@ -91,8 +119,6 @@ SEARCH_PRESETS = {
         "tokens_per_query": 6000,
         "output_style": "detailed",
         "max_context_tokens": 26_000,
-        "thinking_budget": 8192,
-        "synthesis_budget": 8192,
         "full_page_sources": 4,
         "total_full_page_sources": 5,
         "full_page_chars": 6000,
@@ -105,8 +131,6 @@ SEARCH_PRESETS = {
         "tokens_per_query": 8192,
         "output_style": "report",
         "max_context_tokens": 40_000,
-        "thinking_budget": 32768,
-        "synthesis_budget": 32768,
         "full_page_sources": 6,
         "total_full_page_sources": 8,
         "full_page_chars": 8000,
