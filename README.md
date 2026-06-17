@@ -1,6 +1,6 @@
 # AI Research Assistant
 
-A real-time, source-backed research tool powered by LLMs. Ask a question, get a cited answer — streamed live to your browser.
+A real-time, source-backed research tool powered by LLMs. Ask a question and get a cited answer streamed live to your browser.
 
 <p align="center">
   <img src="screenshot.png" alt="AI Research Assistant UI" width="720" />
@@ -8,18 +8,18 @@ A real-time, source-backed research tool powered by LLMs. Ask a question, get a 
 
 ## What it does
 
-AI Research Assistant takes a natural-language question, searches the web via the Brave Search API, scores and enriches the most relevant sources, then synthesises a fully-cited answer using an LLM of your choice. The entire pipeline — from query planning to final response — streams to the browser in real time through Server-Sent Events.
+AI Research Assistant takes a natural-language question, searches the web via the Brave Search API, scores and enriches the most relevant sources, then synthesises a fully-cited answer using an LLM of your choice. The entire pipeline (from query planning to final response) streams to the browser in real time through Server-Sent Events.
 
 ### Key capabilities
 
-- **Three research modes** — *Quick* for fast answers, *Moderate* for balanced depth, *Deep* for comprehensive reports with multi-pass coverage checking.
-- **Multi-model support** — switch between DeepSeek V4 (Pro / Flash), Gemini 3.5 Flash, and Mistral Medium 3.5 from the UI.
-- **Live streaming** — answers render token-by-token with a streaming cursor, model thinking/reasoning displayed in a collapsible panel.
-- **Interactive citations** — `[N]` references become hoverable tooltips showing source title, domain, and snippet.
-- **Full-page enrichment** — top-scored sources are fetched and distilled into query-relevant excerpts so the LLM gets richer context than search snippets alone.
-- **Optional image results** — toggleable image search returns ranked, deduplicated thumbnails alongside the text answer, filtering out undesirable domains (like TikTok).
-- **Search history** — every research session is saved as markdown with embedded source and pipeline metadata, rehydratable from the sidebar.
-- **Cancellable searches** — the search button transforms into a cancel button mid-stream for cooperative cancellation.
+- **Three research modes**: *Quick* for fast answers, *Moderate* for balanced depth, and *Deep* for comprehensive reports with multi-pass coverage checking.
+- **Multi-model support**: Switch between DeepSeek V4 (Pro / Flash), Gemini 3.5 Flash, and Mistral Medium 3.5 from the UI.
+- **Live streaming**: Answers render token-by-token with a streaming cursor while model thinking/reasoning displays in a collapsible panel.
+- **Interactive citations**: Reference tags like `[N]` become hoverable tooltips showing the source title, domain, and snippet.
+- **Full-page enrichment**: Top-scored sources are fetched and distilled into query-relevant excerpts so the LLM receives richer context than search snippets alone.
+- **Optional image results**: Toggleable image search returns ranked and deduplicated thumbnails alongside the text answer, filtering out undesirable domains such as TikTok.
+- **Search history**: Every research session is saved as markdown with embedded source and pipeline metadata, which can be rehydrated from the sidebar.
+- **Cancellable searches**: The search button changes into a cancel button mid-stream to support cooperative cancellation.
 
 ---
 
@@ -30,8 +30,8 @@ AI Research Assistant takes a natural-language question, searches the web via th
 | Backend | Python 3 · Flask · SSE streaming |
 | Frontend | Vanilla JS · marked.js · highlight.js |
 | Search | Brave Web Search API · Brave Image Search API |
-| LLM | OpenAI-compatible API (DeepSeek, Gemini) |
-| Styling | Custom CSS — Swiss technical data interface |
+| LLM | OpenAI-compatible API (DeepSeek, Gemini, Mistral) |
+| Styling | Custom CSS (Swiss technical data interface layout) |
 | Fonts | Space Grotesk · JetBrains Mono |
 
 ---
@@ -42,7 +42,7 @@ AI Research Assistant takes a natural-language question, searches the web via th
 
 - Python 3.10+
 - A [Brave Search API](https://brave.com/search/api/) key
-- At least one LLM API key (DeepSeek or Google Gemini)
+- At least one LLM API key (DeepSeek, Google Gemini, or Mistral AI)
 
 ### Installation
 
@@ -150,13 +150,13 @@ User question
                                          └─────────────────┘
 ```
 
-1. **Planning** — Quick mode uses the question directly; Moderate and Deep ask the LLM to decompose it into focused sub-queries.
-2. **Search** — Sub-queries are dispatched to the Brave Search API in parallel. Results are deduplicated and registered with stable IDs.
-3. **Scoring** — Sources are ranked by title/snippet relevance, freshness, primary-source signals, and search rank.
-4. **Enrichment** — The highest-scored sources are fetched using rotating browser profiles with high-fidelity headers, retrying once on transient blocks. Content is distilled into query-relevant excerpts (uses trafilatura when available, with an HTML parser fallback).
-5. **Coverage** — Moderate and Deep modes run deterministic token-overlap checks using block-level density matching against individual titles, snippets, and paragraph excerpts, then trigger capped follow-up searches for weakly covered areas.
-6. **Synthesis** — The LLM generates a cited answer streamed to the browser. Mode-specific prompts control depth and format.
-7. **Validation** — Phantom citations are stripped; only sources actually referenced in the answer are included in the final output.
+1. **Planning**: Quick mode uses the question directly, while Moderate and Deep modes ask the LLM to decompose it into focused sub-queries.
+2. **Search**: Sub-queries are dispatched to the Brave Search API in parallel, then results are deduplicated and registered with stable IDs.
+3. **Scoring**: Sources are ranked by title/snippet relevance, freshness, primary-source signals, and search rank.
+4. **Enrichment**: The highest-scored sources are fetched using rotating browser profiles with high-fidelity headers, retrying once on transient blocks. The content is distilled into query-relevant excerpts, using trafilatura when available, with a standard HTML parser fallback.
+5. **Coverage**: Moderate and Deep modes run deterministic token-overlap checks using block-level density matching against individual titles, snippets, and paragraph excerpts. They then trigger capped follow-up searches for weakly covered areas.
+6. **Synthesis**: The LLM generates a cited answer streamed to the browser, using mode-specific prompts to control depth and format.
+7. **Validation**: Phantom citations are stripped, and only the sources actually referenced in the answer are included in the final output.
 
 ---
 
@@ -182,4 +182,4 @@ The test suite covers history persistence, concurrent writes, deterministic sear
 
 ## License
 
-This project is provided as-is for personal and educational use.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
