@@ -62,6 +62,10 @@ def normalize_url(url: str) -> str:
     url = url.rstrip("/")
     # Remove common tracking / referral parameters
     url = re.sub(r"[?&](utm_\w+|ref|source|fbclid|gclid)=[^&]*", "", url)
+    # Fix query string separators if a parameter at the start was removed
+    url = url.replace("?&", "?")
+    if "?" not in url and "&" in url:
+        url = url.replace("&", "?", 1)
     # Clean up leftover ? or & at the end
     url = url.rstrip("?&")
     return url

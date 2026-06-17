@@ -101,8 +101,8 @@ class SearchHistory:
             front_matter = (
                 f"---\n"
                 f"id: {search_id}\n"
-                f'title: "{title}"\n'
-                f'question: "{question}"\n'
+                f"title: {json.dumps(title, ensure_ascii=False)}\n"
+                f"question: {json.dumps(question, ensure_ascii=False)}\n"
                 f"mode: {mode}\n"
                 f"provider: {provider}\n"
                 f"date: {now.isoformat()}\n"

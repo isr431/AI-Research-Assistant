@@ -553,7 +553,14 @@ def _compact_query(text: str, max_terms: int = 12) -> str:
 
 def _build_followup_query(question: str, row: dict[str, Any]) -> str:
     missing_terms = row.get("missing_terms", [])
-    missing_text = " ".join(str(term) for term in missing_terms[:4])
+    question_terms = tokenize_terms(question.lower())
+    new_terms = [
+        term for term in missing_terms 
+        if term.lower() not in question_terms
+    ]
+    if not new_terms:
+        return question.strip()
+    missing_text = " ".join(str(term) for term in new_terms[:4])
     return f"{question} {missing_text}".strip()
 
 

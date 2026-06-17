@@ -954,5 +954,98 @@ class MistralIntegrationTests(unittest.TestCase):
         })
 
 
+class NewFixesTests(unittest.TestCase):
+    def test_gemini_streaming_prefix_optimization(self) -> None:
+        from llm import LLMClient
+        
+        # Setup mock stream response that streams ordinary content directly
+        class FakeStreamResponse:
+            def __init__(self, lines: list[str]) -> None:
+                self.lines = lines
+                self.status_code = 200
+            def raise_for_status(self) -> None:
+                pass
+            def close(self) -> None:
+                pass
+            def iter_lines(self, *args, **kwargs):
+                return iter(self.lines)
+
+        sse_lines = [
+            "data: {\"choices\": [{\"delta\": {\"content\": \"Hi\"}}]}",
+            "data: {\"choices\": [{\"delta\": {\"content\": \" there.\"}}]}",
+            "data: [DONE]"
+        ]
+        
+        with patch("llm.requests.post", return_value=FakeStreamResponse(sse_lines)):
+            provider_cfg = {
+                "name": "Gemini 3.5 Flash",
+                "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+                "model": "gemini-3.5-flash",
+                "api_key": "fake-key",
+                "supports_json_mode": True,
+                "supports_thinking": True,
+                "thinking_style": "gemini"
+            }
+            client = LLMClient(provider_cfg, thinking_budget=2048)
+            events = list(client.ask_text_stream("test query"))
+            
+            # The first event must be content "Hi" immediately (no 20-character buffering delay)
+            self.assertEqual(events[0], {"type": "content", "delta": "Hi"})
+            self.assertEqual(events[1], {"type": "content", "delta": " there."})
+            self.assertEqual(events[2], {
+                "type": "done",
+                "content": "Hi there.",
+                "thinking": ""
+            })
+
+    def test_url_normalization_query_bug(self) -> None:
+        from sources import normalize_url
+        url1 = "https://example.com/page?ref=123&q=apple"
+        url2 = "https://example.com/page?q=apple"
+        self.assertEqual(normalize_url(url1), normalize_url(url2))
+
+    def test_history_yaml_frontmatter_escaping(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            history = SearchHistory(output_dir=tmpdir)
+            question_with_quotes = 'What is "antigravity"?'
+            title_with_quotes = 'Meaning of "antigravity"'
+            
+            search_id = history.save_search(
+                question=question_with_quotes,
+                mode="quick",
+                provider="test-model",
+                content="Answer",
+                title=title_with_quotes
+            )
+            
+            # Read the file directly to check if the YAML front matter has correctly escaped quotes
+            filename = history.list_searches()[0]["filename"]
+            with open(os.path.join(tmpdir, filename), "r", encoding="utf-8") as f:
+                content = f.read()
+                
+            self.assertIn('title: "Meaning of \\"antigravity\\""', content)
+            self.assertIn('question: "What is \\"antigravity\\"?"', content)
+
+    def test_build_followup_query_deduplication(self) -> None:
+        from researcher import _build_followup_query
+        
+        # Test case where missing terms are already in the question:
+        question = "Compare alpha release timing with gamma patent litigation"
+        row_redundant = {
+            "question": "gamma patent litigation",
+            "missing_terms": ["gamma", "patent", "litigation"]
+        }
+        query1 = _build_followup_query(question, row_redundant)
+        self.assertEqual(query1, "Compare alpha release timing with gamma patent litigation")  # Should fallback to the original question itself
+        
+        # Test case where there are indeed new terms:
+        row_new = {
+            "question": "Nasdaq Dow Jones index drops January 2026",
+            "missing_terms": ["Nasdaq", "Dow", "Jones"]
+        }
+        query2 = _build_followup_query(question, row_new)
+        self.assertEqual(query2, "Compare alpha release timing with gamma patent litigation Nasdaq Dow Jones")
+
+
 if __name__ == "__main__":
     unittest.main()

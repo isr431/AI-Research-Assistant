@@ -528,8 +528,11 @@ class LLMClient:
                             else:
                                 full_thinking += after
                                 yield {"type": "thinking", "delta": after}
-                    elif len(_thought_buffer) > 20:
-                        # No <thought> tag found after enough chars — treat as content
+                    elif (
+                        _thought_buffer.lstrip()
+                        and not "<thought>".startswith(_thought_buffer.lstrip())
+                    ) or len(_thought_buffer) > 20:
+                        # No <thought> tag found after enough chars or prefix mismatch — treat as content
                         _thought_phase = "content"
                         full_content += _thought_buffer
                         yield {"type": "content", "delta": _thought_buffer}
