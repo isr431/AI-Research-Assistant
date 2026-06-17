@@ -126,6 +126,13 @@
     dom.imagesToggle.addEventListener('change', () => {
       state.includeImages = dom.imagesToggle.checked;
     });
+
+    // Re-align mode toggle slider on window resize, page load, or when custom fonts load
+    window.addEventListener('resize', updateModeSlider);
+    window.addEventListener('load', updateModeSlider);
+    if (document.fonts) {
+      document.fonts.ready.then(updateModeSlider);
+    }
   }
 
   // ── Providers ──────────────────────────────────────────────

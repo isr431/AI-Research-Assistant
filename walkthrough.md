@@ -126,7 +126,7 @@ A comprehensive 1,600+ line design system:
 - High-density panel styling for the pipeline, thinking stream, markdown response, image results, citations, source list, code blocks, tables, and blockquotes.
 - Image tiles use fixed aspect ratios, metadata rows, and broken-image placeholders so thumbnails do not shift the layout.
 - Restrained motion: short fades, a square pulse ring for the active pipeline stage, a red streaming cursor, spinner, and toast in/out transitions.
-- Responsive breakpoint at 768px, where CSS defines an off-canvas sidebar state and the main content padding tightens. No mobile sidebar opener is currently wired in JavaScript.
+- Desktop-optimized design: Mobile responsive styles and breakpoints have been removed to keep the interface strictly focused on the core desktop knowledge console experience.
 
 ---
 
