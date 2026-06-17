@@ -118,32 +118,32 @@ User question
       │
       ▼
 ┌─────────────┐     ┌──────────────┐     ┌────────────────┐
-│  Query Plan  │────▶│ Brave Search │────▶│ Source Scoring  │
-│  (LLM)       │     │ (parallel)   │     │ & Deduplication │
+│  Query Plan │────▶│ Brave Search │────▶│ Source Scoring │
+│  (LLM)      │     │ (parallel)   │     │ & Deduplication│
 └─────────────┘     └──────────────┘     └────────┬───────┘
                                                    │
                                                    ▼
                                          ┌─────────────────┐
-                                         │ Page Enrichment  │
-                                         │ (top sources)    │
+                                         │ Page Enrichment │
+                                         │ (top sources)   │
                                          └────────┬────────┘
                                                    │
                                                    ▼
                                          ┌─────────────────┐
-                                         │ Coverage Check   │──── follow-up
-                                         │ (Moderate/Deep)  │     searches
+                                         │ Coverage Check  │──── follow-up
+                                         │ (Moderate/Deep) │     searches
                                          └────────┬────────┘     if needed
                                                    │
                                                    ▼
                                          ┌─────────────────┐
-                                         │ LLM Synthesis    │
-                                         │ (streamed SSE)   │
+                                         │ LLM Synthesis   │
+                                         │ (streamed SSE)  │
                                          └────────┬────────┘
                                                    │
                                                    ▼
                                          ┌─────────────────┐
-                                         │ Citation Valid.  │
-                                         │ + History Save   │
+                                         │ Citation Valid. │
+                                         │ + History Save  │
                                          └─────────────────┘
 ```
 
