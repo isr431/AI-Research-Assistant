@@ -842,14 +842,18 @@
       dom.thinkingTokenCt.textContent = `~${tokens} tokens`;
     }
 
-    // Complete all pipeline stages
+    // Complete all pipeline stages and restore default labels
     PIPELINE_STAGES.forEach((stage) => {
       const stepEl = $(`#step-${stage.key}`);
       if (!stepEl) return;
       const indicator = stepEl.querySelector('.step-indicator');
+      const label = stepEl.querySelector('.step-label');
       stepEl.className = 'pipeline-step completed';
       indicator.className = 'step-indicator completed';
       indicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      if (label) {
+        label.textContent = stage.label;
+      }
     });
 
     // Wrap up
