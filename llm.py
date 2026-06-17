@@ -99,9 +99,21 @@ def _gemini_thinking_params(thinking_budget: int) -> dict[str, Any]:
     }
 
 
+def _mistral_thinking_params(thinking_budget: int) -> dict[str, Any]:
+    """Build Mistral-specific thinking parameters.
+
+    Mistral uses:
+      {"reasoning_effort": "high"|"none"}
+    """
+    if thinking_budget <= 0:
+        return {"reasoning_effort": "none"}
+    return {"reasoning_effort": "high"}
+
+
 _THINKING_BUILDERS = {
     "deepseek": _deepseek_thinking_params,
     "gemini": _gemini_thinking_params,
+    "mistral": _mistral_thinking_params,
 }
 
 
@@ -137,7 +149,11 @@ def _extract_response(data: dict[str, Any]) -> tuple[str, str]:
                 continue
             if block.get("type") == "thinking":
                 inner = block.get("thinking", {})
-                if isinstance(inner, dict):
+                if isinstance(inner, list):
+                    for item in inner:
+                        if isinstance(item, dict) and item.get("type") == "text":
+                            thinking_parts.append(item.get("text", ""))
+                elif isinstance(inner, dict):
                     thinking_parts.append(inner.get("text", ""))
                 elif isinstance(inner, str):
                     thinking_parts.append(inner)
@@ -469,11 +485,16 @@ class LLMClient:
                         continue
                     if block.get("type") == "thinking":
                         inner = block.get("thinking", {})
-                        text = (
-                            inner.get("text", "")
-                            if isinstance(inner, dict)
-                            else str(inner)
-                        )
+                        if isinstance(inner, list):
+                            text = "".join(
+                                item.get("text", "")
+                                for item in inner
+                                if isinstance(item, dict) and item.get("type") == "text"
+                            )
+                        elif isinstance(inner, dict):
+                            text = inner.get("text", "")
+                        else:
+                            text = str(inner)
                         if text:
                             full_thinking += text
                             yield {"type": "thinking", "delta": text}

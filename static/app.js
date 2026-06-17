@@ -541,6 +541,9 @@
   }
 
   function updatePipelineStage(stageKey, message) {
+    const isValidStage = PIPELINE_STAGES.some((stage) => stage.key === stageKey);
+    if (!isValidStage) return;
+
     // Complete all stages before current
     let reached = false;
     PIPELINE_STAGES.forEach((stage) => {
@@ -728,13 +731,14 @@
           sources: fetchEvent.sources || [],
         });
       });
-    const gapStep = $('#step-gap_analysis');
-    if (gapStep) {
-      gapStep.className = 'pipeline-step completed';
-      const indicator = gapStep.querySelector('.step-indicator');
+    PIPELINE_STAGES.forEach((stage) => {
+      const stepEl = $(`#step-${stage.key}`);
+      if (!stepEl) return;
+      const indicator = stepEl.querySelector('.step-indicator');
+      stepEl.className = 'pipeline-step completed';
       indicator.className = 'step-indicator completed';
       indicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-    }
+    });
   }
 
   function renderFollowups(followups) {

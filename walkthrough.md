@@ -21,7 +21,7 @@ The entry point for the web application. Features:
 
 ### [config.py](config.py) — Configuration & Multi-model Support
 Handles API keys, global configurations, and model definitions.
-- `MODEL_PROVIDERS`: A flat dictionary containing specific models (e.g., `deepseek-v4-pro`, `deepseek-v4-flash`, `gemini-3.5-flash`), their URLs, and capabilities.
+- `MODEL_PROVIDERS`: A flat dictionary containing specific models (e.g., `deepseek-v4-pro`, `deepseek-v4-flash`, `gemini-3.5-flash`, `mistral-medium-3.5`), their URLs, and capabilities.
 - Configuration errors raise normal Python exceptions so the web stream can surface failures cleanly instead of terminating a worker thread.
 - `SEARCH_PRESETS`: Defines three performance modes with finely tuned token budgets:
   - **Quick**: One direct search pass and one concise answer pass. It skips planning and refinement to preserve latency.
@@ -42,6 +42,7 @@ Maintains a thread-safe JSON index (`output/history.json`) alongside timestamped
 OpenAI-compatible client with robust streaming and JSON extraction capabilities.
 - `chat_completion_stream()`: A highly specialized SSE parser that connects to LLMs via `stream=True`. It yields structured event dicts: `{"type": "thinking"|"content"|"done", ...}`.
 - Implements a state machine to parse Gemini's inline `<thought>...</thought>` tags natively, stripping them from the main content stream and yielding them as discrete `thinking` events.
+- Handles Mistral-specific reasoning/thinking mode using the `reasoning_effort` API parameter, and parses both streaming and non-streaming thinking content nested within list-based blocks.
 - Handles automated retries for malformed JSON when `json_mode=True`.
 
 ### [prompts.py](prompts.py) — System Instructions
@@ -143,4 +144,4 @@ python3 app.py
 python3 -m unittest discover -s tests
 ```
 
-The test suite covers metadata and image-history persistence, concurrent history writes, deterministic search ordering, fixed-count image search, image normalization/ranking/deduplication, blocked image domain filtering, source scoring and enrichment, page extraction fallback behavior, browser profile completeness and consistency (Chrome Client Hints present, Firefox Client Hints absent, no Accept-Encoding), profile selection randomness, retry recovery from transient 403/429 blocks, persistent block handling, quick-mode planning behavior, deterministic coverage helpers, provider aliases, active-search cleanup, and cancellation helpers.
+The test suite covers metadata and image-history persistence, concurrent history writes, deterministic search ordering, fixed-count image search, image normalization/ranking/deduplication, blocked image domain filtering, source scoring and enrichment, page extraction fallback behavior, browser profile completeness and consistency (Chrome Client Hints present, Firefox Client Hints absent, no Accept-Encoding), profile selection randomness, retry recovery from transient 403/429 blocks, persistent block handling, quick-mode planning behavior, deterministic coverage helpers, provider configurations and aliases, Mistral thinking parameters, list-nested thinking content extraction under streaming/non-streaming parsers, active-search cleanup, and cancellation helpers.

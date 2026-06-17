@@ -13,7 +13,7 @@ AI Research Assistant takes a natural-language question, searches the web via th
 ### Key capabilities
 
 - **Three research modes** — *Quick* for fast answers, *Moderate* for balanced depth, *Deep* for comprehensive reports with multi-pass coverage checking.
-- **Multi-model support** — switch between DeepSeek V4 (Pro / Flash) and Gemini 3.5 Flash from the UI.
+- **Multi-model support** — switch between DeepSeek V4 (Pro / Flash), Gemini 3.5 Flash, and Mistral Medium 3.5 from the UI.
 - **Live streaming** — answers render token-by-token with a streaming cursor, model thinking/reasoning displayed in a collapsible panel.
 - **Interactive citations** — `[N]` references become hoverable tooltips showing source title, domain, and snippet.
 - **Full-page enrichment** — top-scored sources are fetched and distilled into query-relevant excerpts so the LLM gets richer context than search snippets alone.
@@ -72,9 +72,12 @@ DEEPSEEK_API_KEY=your-deepseek-key-here
 
 # Google Gemini (optional alternative)
 # GEMINI_API_KEY=your-gemini-key-here
+
+# Mistral AI (optional alternative)
+# MISTRAL_API_KEY=your-mistral-key-here
 ```
 
-You only need one LLM provider key to get started. Uncomment and set `GEMINI_API_KEY` if you want Gemini as an option in the model selector.
+You only need one LLM provider key to get started. Uncomment and set `GEMINI_API_KEY` or `MISTRAL_API_KEY` if you want Gemini or Mistral as an option in the model selector.
 
 ### Run
 

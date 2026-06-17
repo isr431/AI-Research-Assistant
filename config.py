@@ -46,6 +46,15 @@ MODEL_PROVIDERS = {
         # wrapped in <thought>...</thought> tags.
         "thinking_style": "gemini",
     },
+    "mistral-medium-3.5": {
+        "name": "Mistral Medium 3.5",
+        "base_url": "https://api.mistral.ai/v1",
+        "model": "mistral-medium-3.5",
+        "api_key_env": "MISTRAL_API_KEY",
+        "supports_json_mode": True,
+        "supports_thinking": True,
+        "thinking_style": "mistral",
+    },
 }
 
 DEFAULT_PROVIDER = "deepseek-v4-flash"
@@ -54,6 +63,7 @@ DEFAULT_PROVIDER = "deepseek-v4-flash"
 _PROVIDER_ALIASES = {
     "deepseek": "deepseek-v4-flash",
     "gemini": "gemini-3.5-flash",
+    "mistral": "mistral-medium-3.5",
 }
 
 # ---------------------------------------------------------------------------

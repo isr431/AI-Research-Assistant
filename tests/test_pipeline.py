@@ -797,5 +797,162 @@ class TextHelpersTests(unittest.TestCase):
         self.assertIn("apple", terms)
 
 
+class MistralIntegrationTests(unittest.TestCase):
+    def test_mistral_config_and_aliases(self) -> None:
+        from config import MODEL_PROVIDERS, _PROVIDER_ALIASES
+        self.assertIn("mistral-medium-3.5", MODEL_PROVIDERS)
+        mistral_config = MODEL_PROVIDERS["mistral-medium-3.5"]
+        self.assertEqual(mistral_config["name"], "Mistral Medium 3.5")
+        self.assertEqual(mistral_config["model"], "mistral-medium-3.5")
+        self.assertEqual(mistral_config["thinking_style"], "mistral")
+        self.assertTrue(mistral_config["supports_thinking"])
+        self.assertTrue(mistral_config["supports_json_mode"])
+        
+        self.assertIn("mistral", _PROVIDER_ALIASES)
+        self.assertEqual(_PROVIDER_ALIASES["mistral"], "mistral-medium-3.5")
+
+    def test_mistral_thinking_params(self) -> None:
+        from llm import _THINKING_BUILDERS
+        self.assertIn("mistral", _THINKING_BUILDERS)
+        builder = _THINKING_BUILDERS["mistral"]
+        self.assertEqual(builder(0), {"reasoning_effort": "none"})
+        self.assertEqual(builder(-5), {"reasoning_effort": "none"})
+        self.assertEqual(builder(100), {"reasoning_effort": "high"})
+        self.assertEqual(builder(2048), {"reasoning_effort": "high"})
+
+    def test_extract_response_with_nested_thinking(self) -> None:
+        from llm import _extract_response
+        
+        # Test case 1: Standard string thinking (DeepSeek/Gemini style or standard)
+        data_standard = {
+            "choices": [{
+                "message": {
+                    "content": "Hello",
+                    "reasoning_content": "Initial thoughts"
+                }
+            }]
+        }
+        content, thinking = _extract_response(data_standard)
+        self.assertEqual(content, "Hello")
+        self.assertEqual(thinking, "Initial thoughts")
+
+        # Test case 2: List-nested block thinking with list of dicts (Mistral style)
+        data_mistral_list = {
+            "choices": [{
+                "message": {
+                    "content": [
+                        {
+                            "type": "thinking",
+                            "thinking": [
+                                {"type": "text", "text": "Thought part 1. "},
+                                {"type": "text", "text": "Thought part 2."}
+                            ]
+                        },
+                        {
+                            "type": "text",
+                            "text": "Actual answer content."
+                        }
+                    ]
+                }
+            }]
+        }
+        content, thinking = _extract_response(data_mistral_list)
+        self.assertEqual(content, "Actual answer content.")
+        self.assertEqual(thinking, "Thought part 1. Thought part 2.")
+
+        # Test case 3: List-nested block thinking with dict
+        data_dict = {
+            "choices": [{
+                "message": {
+                    "content": [
+                        {
+                            "type": "thinking",
+                            "thinking": {"text": "Simple thought"}
+                        },
+                        {
+                            "type": "text",
+                            "text": "Answer"
+                        }
+                    ]
+                }
+            }]
+        }
+        content, thinking = _extract_response(data_dict)
+        self.assertEqual(content, "Answer")
+        self.assertEqual(thinking, "Simple thought")
+
+        # Test case 4: List-nested block thinking with string
+        data_str = {
+            "choices": [{
+                "message": {
+                    "content": [
+                        {
+                            "type": "thinking",
+                            "thinking": "Simple string thought"
+                        },
+                        {
+                            "type": "text",
+                            "text": "Answer"
+                        }
+                    ]
+                }
+            }]
+        }
+        content, thinking = _extract_response(data_str)
+        self.assertEqual(content, "Answer")
+        self.assertEqual(thinking, "Simple string thought")
+
+    @patch("llm.requests.post")
+    def test_chat_completion_stream_with_nested_thinking(self, mock_post) -> None:
+        from llm import LLMClient
+        
+        # Setup mock stream response
+        class FakeStreamResponse:
+            def __init__(self, lines: list[str]) -> None:
+                self.lines = lines
+                self.status_code = 200
+            def raise_for_status(self) -> None:
+                pass
+            def close(self) -> None:
+                pass
+            def iter_lines(self, *args, **kwargs):
+                return iter(self.lines)
+
+        sse_lines = [
+            "data: {\"choices\": [{\"delta\": {\"content\": [{\"type\": \"thinking\", \"thinking\": [{\"type\": \"text\", \"text\": \"Mistral thinking part 1. \"}]}]}}]}",
+            "data: {\"choices\": [{\"delta\": {\"content\": [{\"type\": \"thinking\", \"thinking\": [{\"type\": \"text\", \"text\": \"Mistral thinking part 2.\"}]}]}}]}",
+            "data: {\"choices\": [{\"delta\": {\"content\": [{\"type\": \"text\", \"text\": \"Main response content.\"}]}}]}",
+            "data: [DONE]"
+        ]
+        
+        mock_post.return_value = FakeStreamResponse(sse_lines)
+        
+        provider_cfg = {
+            "name": "Mistral Medium 3.5",
+            "base_url": "https://api.mistral.ai/v1",
+            "model": "mistral-medium-3.5",
+            "api_key": "fake-key",
+            "supports_json_mode": True,
+            "supports_thinking": True,
+            "thinking_style": "mistral"
+        }
+        
+        client = LLMClient(provider_cfg, thinking_budget=2048)
+        events = list(client.ask_text_stream("test query"))
+        
+        # Verify events emitted
+        # We expect two thinking events, one content event, and one done event.
+        self.assertEqual(len(events), 4)
+        
+        self.assertEqual(events[0], {"type": "thinking", "delta": "Mistral thinking part 1. "})
+        self.assertEqual(events[1], {"type": "thinking", "delta": "Mistral thinking part 2."})
+        self.assertEqual(events[2], {"type": "content", "delta": "Main response content."})
+        self.assertEqual(events[3], {
+            "type": "done",
+            "content": "Main response content.",
+            "thinking": "Mistral thinking part 1. Mistral thinking part 2."
+        })
+
+
 if __name__ == "__main__":
     unittest.main()
