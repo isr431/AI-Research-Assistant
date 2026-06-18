@@ -425,6 +425,7 @@ class LLMClient:
                 f"LLM streaming call failed after {max_retries} attempts: {last_error}"
             )
 
+        resp.encoding = "utf-8"
         full_content = ""
         full_thinking = ""
 

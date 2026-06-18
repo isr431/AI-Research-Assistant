@@ -260,6 +260,7 @@ To bypass CDN filters and scrapers, `fetch_page_excerpt` ([fetch_pages.py](file:
 3. **No Em Dashes**: Prompts specifically forbid the use of em dashes (—) to prevent formatting inconsistencies.
 4. **Desktop Focused**: Responsive breakpoints and mobile scaling elements were removed from `style.css` to keep the UI strictly optimized as a high-density, technical desktop information workstation.
 5. **No Database requirement**: The application stores state and history in flat files under `output/history.json` and individual markdown files, removing external database dependencies.
+6. **UTF-8 SSE Stream Decoding**: All streaming response connections must have `resp.encoding = "utf-8"` explicitly set before consuming chunks. This prevents `requests` from defaulting to `ISO-8859-1` when headers omit a charset parameter, which would otherwise corrupt multi-byte UTF-8 sequences (like dashes, smart quotes, and non-breaking hyphens) into characters like `â`.
 
 ---
 
