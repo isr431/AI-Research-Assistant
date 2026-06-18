@@ -728,42 +728,6 @@ class CancellationTests(unittest.TestCase):
         finally:
             app_module._active_searches.pop("stale-search", None)
 
-    def test_search_endpoint_accepts_provider_aliases(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            original_history = app_module._history
-            app_module._history = SearchHistory(output_dir=tmpdir)
-            done_event = threading.Event()
-
-            def fake_research_stream(*, on_event, **_: object) -> str:
-                on_event({
-                    "type": "done",
-                    "content": "Answer",
-                    "thinking": "",
-                    "sources": [],
-                    "images": [],
-                })
-                done_event.set()
-                return "Answer"
-
-            try:
-                client = app_module.app.test_client()
-                with patch.object(app_module, "research_stream", fake_research_stream):
-                    response = client.post(
-                        "/api/search",
-                        json={
-                            "question": "Question?",
-                            "provider": "deepseek",
-                            "mode": "quick",
-                        },
-                    )
-                self.assertTrue(done_event.wait(timeout=1))
-            finally:
-                app_module._history = original_history
-                for search_id in list(app_module._active_searches):
-                    app_module._active_searches.pop(search_id, None)
-
-        self.assertEqual(response.status_code, 200)
-
 
 class TextHelpersTests(unittest.TestCase):
     def test_stem_word_strips_common_suffixes(self) -> None:
@@ -799,7 +763,7 @@ class TextHelpersTests(unittest.TestCase):
 
 class MistralIntegrationTests(unittest.TestCase):
     def test_mistral_config_and_aliases(self) -> None:
-        from config import MODEL_PROVIDERS, _PROVIDER_ALIASES
+        from config import MODEL_PROVIDERS
         self.assertIn("mistral-medium-3.5", MODEL_PROVIDERS)
         mistral_config = MODEL_PROVIDERS["mistral-medium-3.5"]
         self.assertEqual(mistral_config["name"], "Mistral Medium 3.5")
@@ -807,9 +771,6 @@ class MistralIntegrationTests(unittest.TestCase):
         self.assertEqual(mistral_config["thinking_style"], "mistral")
         self.assertTrue(mistral_config["supports_thinking"])
         self.assertTrue(mistral_config["supports_json_mode"])
-        
-        self.assertIn("mistral", _PROVIDER_ALIASES)
-        self.assertEqual(_PROVIDER_ALIASES["mistral"], "mistral-medium-3.5")
 
     def test_mistral_thinking_params(self) -> None:
         from llm import _THINKING_BUILDERS
@@ -819,16 +780,6 @@ class MistralIntegrationTests(unittest.TestCase):
         self.assertEqual(builder("disabled"), {"reasoning_effort": "none"})
         self.assertEqual(builder("low"), {"reasoning_effort": "high"})
         self.assertEqual(builder("high"), {"reasoning_effort": "high"})
-
-    def test_deepseek_thinking_params(self) -> None:
-        from llm import _THINKING_BUILDERS
-        self.assertIn("deepseek", _THINKING_BUILDERS)
-        builder = _THINKING_BUILDERS["deepseek"]
-        self.assertEqual(builder("none"), {"thinking": {"type": "disabled"}})
-        self.assertEqual(builder("disabled"), {"thinking": {"type": "disabled"}})
-        self.assertEqual(builder("high"), {"thinking": {"type": "enabled"}, "reasoning_effort": "high"})
-        self.assertEqual(builder("max"), {"thinking": {"type": "enabled"}, "reasoning_effort": "max"})
-        self.assertEqual(builder("low"), {"thinking": {"type": "enabled"}, "reasoning_effort": "high"})
 
     def test_gemini_thinking_params(self) -> None:
         from llm import _THINKING_BUILDERS
@@ -856,6 +807,16 @@ class MistralIntegrationTests(unittest.TestCase):
                 }
             }
         })
+
+    def test_openrouter_thinking_params(self) -> None:
+        from llm import _THINKING_BUILDERS
+        self.assertIn("openrouter", _THINKING_BUILDERS)
+        builder = _THINKING_BUILDERS["openrouter"]
+        self.assertEqual(builder("none"), {"reasoning": {"exclude": True}})
+        self.assertEqual(builder("disabled"), {"reasoning": {"exclude": True}})
+        self.assertEqual(builder("max"), {"reasoning": {"effort": "xhigh", "exclude": False}})
+        self.assertEqual(builder("high"), {"reasoning": {"effort": "high", "exclude": False}})
+        self.assertEqual(builder("medium"), {"reasoning": {"effort": "medium", "exclude": False}})
 
     def test_extract_response_with_nested_thinking(self) -> None:
         from llm import _extract_response

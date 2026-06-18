@@ -57,18 +57,6 @@ def extract_json(text: str) -> dict:
 # Thinking-level mapping helpers
 # ---------------------------------------------------------------------------
 
-def _deepseek_thinking_params(level: str) -> dict[str, Any]:
-    """Build DeepSeek-specific thinking parameters.
-
-    DeepSeek V4 supports:
-      - enabled: reasoning_effort="high" or "max"
-      - disabled: {"thinking": {"type": "disabled"}}
-    """
-    if level in ("disabled", "none", "off"):
-        return {"thinking": {"type": "disabled"}}
-    effort = level if level in ("high", "max") else "high"
-    return {"thinking": {"type": "enabled"}, "reasoning_effort": effort}
-
 
 def _gemini_thinking_params(level: str) -> dict[str, Any]:
     """Build Gemini-specific thinking parameters.
@@ -103,10 +91,32 @@ def _mistral_thinking_params(level: str) -> dict[str, Any]:
     return {"reasoning_effort": "high"}
 
 
+def _openrouter_thinking_params(level: str) -> dict[str, Any]:
+    """Build OpenRouter-specific thinking parameters.
+
+    OpenRouter recommends the nested ``reasoning`` configuration object.
+    """
+    if level in ("disabled", "none", "off"):
+        return {"reasoning": {"exclude": True}}
+    
+    effort = level
+    if level == "max":
+        effort = "xhigh"
+    elif level not in ("minimal", "low", "medium", "high", "xhigh"):
+        effort = "high"
+        
+    return {
+        "reasoning": {
+            "effort": effort,
+            "exclude": False
+        }
+    }
+
+
 _THINKING_BUILDERS = {
-    "deepseek": _deepseek_thinking_params,
     "gemini": _gemini_thinking_params,
     "mistral": _mistral_thinking_params,
+    "openrouter": _openrouter_thinking_params,
 }
 
 
@@ -268,9 +278,8 @@ class LLMClient:
 
         # Inject thinking parameters
         if self.supports_thinking and self.thinking_style in _THINKING_BUILDERS:
-            thinking_params = _THINKING_BUILDERS[self.thinking_style](
-                self._thinking_level
-            )
+            level = "none" if json_mode else self._thinking_level
+            thinking_params = _THINKING_BUILDERS[self.thinking_style](level)
             body.update(thinking_params)
 
         last_error: Exception | None = None
@@ -383,10 +392,11 @@ class LLMClient:
         # Establish the streaming connection with retries on transient errors.
         resp = None
         last_error: Exception | None = None
+        read_timeout = 120 if self.thinking_enabled else 30
         for attempt in range(1, max_retries + 1):
             try:
                 resp = requests.post(
-                    url, headers=headers, json=body, timeout=(10, 30), stream=True
+                    url, headers=headers, json=body, timeout=(10, read_timeout), stream=True
                 )
                 if resp.status_code == 429 or resp.status_code >= 500:
                     last_error = requests.HTTPError(
@@ -439,6 +449,11 @@ class LLMClient:
                 chunk = json.loads(data_str)
             except json.JSONDecodeError:
                 continue
+
+            if "error" in chunk:
+                err_info = chunk["error"]
+                err_msg = err_info.get("message") if isinstance(err_info, dict) else str(err_info)
+                raise RuntimeError(f"OpenRouter streaming error: {err_msg}")
 
             delta = chunk.get("choices", [{}])[0].get("delta", {})
 

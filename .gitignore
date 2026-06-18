@@ -20,3 +20,8 @@ ENV/
 # Search History / Outputs
 output/*
 !output/.gitkeep
+
+# AI Assistant Docs
+walkthrough.md
+CLAUDE.md
+

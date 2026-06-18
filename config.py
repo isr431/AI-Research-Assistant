@@ -14,38 +14,47 @@ load_dotenv()
 MODEL_PROVIDERS = {
     "deepseek-v4-pro": {
         "name": "DeepSeek V4 Pro",
-        "base_url": "https://api.deepseek.com",
-        "model": "deepseek-v4-pro",
-        "api_key_env": "DEEPSEEK_API_KEY",
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "deepseek/deepseek-v4-pro",
+        "api_key_env": "OPENROUTER_API_KEY",
         "supports_json_mode": True,
         "supports_thinking": True,
-        "thinking_style": "deepseek",
-        # DeepSeek API reasoning effort options:
-        #   - "none": disables thinking mode (fast, standard LLM output)
-        #   - "high": default reasoning effort
-        #   - "max": maximum reasoning effort (deepest thinking)
+        "thinking_style": "openrouter",
+        # OpenRouter API reasoning effort options:
+        #   - "none": disables thinking mode
+        #   - "low", "medium", "high", "xhigh"
         "thinking_presets": {
             "quick": "high",
             "moderate": "high",
-            "deep": "max",
+            "deep": "xhigh",
         },
     },
     "deepseek-v4-flash": {
         "name": "DeepSeek V4 Flash",
-        "base_url": "https://api.deepseek.com",
-        "model": "deepseek-v4-flash",
-        "api_key_env": "DEEPSEEK_API_KEY",
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "deepseek/deepseek-v4-flash",
+        "api_key_env": "OPENROUTER_API_KEY",
         "supports_json_mode": True,
         "supports_thinking": True,
-        "thinking_style": "deepseek",
-        # DeepSeek API reasoning effort options:
-        #   - "none": disables thinking mode (fast, standard LLM output)
-        #   - "high": default reasoning effort
-        #   - "max": maximum reasoning effort (deepest thinking)
+        "thinking_style": "openrouter",
         "thinking_presets": {
             "quick": "high",
             "moderate": "high",
-            "deep": "max",
+            "deep": "xhigh",
+        },
+    },
+    "glm-5-2": {
+        "name": "GLM 5.2",
+        "base_url": "https://openrouter.ai/api/v1",
+        "model": "z-ai/glm-5.2",
+        "api_key_env": "OPENROUTER_API_KEY",
+        "supports_json_mode": True,
+        "supports_thinking": True,
+        "thinking_style": "openrouter",
+        "thinking_presets": {
+            "quick": "none",
+            "moderate": "high",
+            "deep": "xhigh",
         },
     },
     "gemini-3.5-flash": {
@@ -87,13 +96,6 @@ MODEL_PROVIDERS = {
 }
 
 DEFAULT_PROVIDER = "deepseek-v4-flash"
-
-# Backwards-compatible aliases for older API payloads or saved history.
-_PROVIDER_ALIASES = {
-    "deepseek": "deepseek-v4-flash",
-    "gemini": "gemini-3.5-flash",
-    "mistral": "mistral-medium-3.5",
-}
 
 # ---------------------------------------------------------------------------
 # Search / Research Presets
@@ -144,16 +146,11 @@ SEARCH_PRESETS = {
 
 def normalize_provider_name(provider_name: str | None = None) -> str:
     """Return the canonical provider key for a user/API supplied provider name."""
-    name = provider_name or DEFAULT_PROVIDER
-    return _PROVIDER_ALIASES.get(name, name)
+    return provider_name or DEFAULT_PROVIDER
 
 
 def get_provider_config(provider_name: str | None = None) -> dict:
-    """Return the provider config dict, validating the API key is set.
-
-    Accepts both full model keys (e.g. ``"deepseek-v4-flash"``) and
-    short aliases (e.g. ``"deepseek"``).
-    """
+    """Return the provider config dict, validating the API key is set."""
     name = normalize_provider_name(provider_name)
     if name not in MODEL_PROVIDERS:
         raise ValueError(

@@ -8,7 +8,7 @@
   // ── State ──────────────────────────────────────────────────
   const state = {
     mode: 'moderate',           // 'quick' | 'moderate' | 'deep'
-    provider: 'deepseek',
+    provider: 'deepseek-v4-flash',
     currentSearchId: null,
     isStreaming: false,
     eventSource: null,

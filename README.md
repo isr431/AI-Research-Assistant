@@ -13,7 +13,7 @@ AI Research Assistant takes a natural-language question, searches the web via th
 ### Key capabilities
 
 - **Three research modes**: *Quick* for fast answers, *Moderate* for balanced depth, and *Deep* for comprehensive reports with multi-pass coverage checking.
-- **Multi-model support**: Switch between DeepSeek V4 (Pro / Flash), Gemini 3.5 Flash, and Mistral Medium 3.5 from the UI.
+- **Multi-model support**: Switch between DeepSeek V4 (Pro / Flash), GLM 5.2, Gemini 3.5 Flash, and Mistral Medium 3.5 from the UI.
 - **Live streaming**: Answers render token-by-token with a streaming cursor while model thinking/reasoning displays in a collapsible panel.
 - **Interactive citations**: Reference tags like `[N]` become hoverable tooltips showing the source title, domain, and snippet.
 - **Full-page enrichment**: Top-scored sources are fetched and distilled into query-relevant excerpts so the LLM receives richer context than search snippets alone.
@@ -30,7 +30,7 @@ AI Research Assistant takes a natural-language question, searches the web via th
 | Backend | Python 3 · Flask · SSE streaming |
 | Frontend | Vanilla JS · marked.js · highlight.js |
 | Search | Brave Web Search API · Brave Image Search API |
-| LLM | OpenAI-compatible API (DeepSeek, Gemini, Mistral) |
+| LLM | OpenAI-compatible API (OpenRouter, Gemini, Mistral) |
 | Styling | Custom CSS (Swiss technical data interface layout) |
 | Fonts | Space Grotesk · JetBrains Mono |
 
@@ -42,7 +42,7 @@ AI Research Assistant takes a natural-language question, searches the web via th
 
 - Python 3.10+
 - A [Brave Search API](https://brave.com/search/api/) key
-- At least one LLM API key (DeepSeek, Google Gemini, or Mistral AI)
+- At least one LLM API key (OpenRouter, Google Gemini, or Mistral AI)
 
 ### Installation
 
@@ -67,8 +67,8 @@ cp .env.example .env
 # Brave Search API
 BRAVE_API_KEY=your-brave-api-key-here
 
-# DeepSeek (default provider)
-DEEPSEEK_API_KEY=your-deepseek-key-here
+# OpenRouter (default provider)
+OPENROUTER_API_KEY=your-openrouter-key-here
 
 # Google Gemini (optional alternative)
 # GEMINI_API_KEY=your-gemini-key-here
